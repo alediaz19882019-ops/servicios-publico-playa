@@ -1,0 +1,137 @@
+
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Mapa de Reportes</h1>
+
+    <!-- Mapa -->
+    <div id="map" style="height: 600px;"></div>
+
+    <!-- Modal para agregar reporte -->
+    <div class="modal fade" id="reporteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form method="POST" id="formReporte" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Agregar Reporte</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label>ID</label>
+                                <input type="text" name="ID" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label>Colonia/Fracc</label>
+                                <input type="text" name="colonia" id="colonia" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label>Reportes</label>
+                                <input type="number" name="REPORTES" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label>Fecha</label>
+                                <input type="date" name="fecha" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label>Estado</label>
+                                <select name="location" class="form-select">
+                                    <option value="Atendidos">Atendidos</option>
+                                    <option value="Pendientes">Pendientes</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label>Color</label>
+                                <select name="COLOR" class="form-select">
+                                    <option value="GREEN">Verde</option>
+                                    <option value="RED">Rojo</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label>Latitud</label>
+                                <input type="text" name="lat" id="lat" class="form-control" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label>Longitud</label>
+                                <input type="text" name="long" id="long" class="form-control" readonly>
+                            </div>
+                            <div class="col-md-12">
+                                <label>Subir Foto</label>
+                                <input type="file" name="foto" id="fotoInput" class="form-control" accept="image/*">
+                                <img id="previewImg" src="https://via.placeholder.com/150?text=Vista+Previa" class="mt-2 rounded" style="width:150px;height:150px;object-fit:cover;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success w-100">Guardar Reporte</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leaflet y Bootstrap -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const map = L.map('map').setView([20.63, -87.09], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Capturar clic en el mapa
+    map.on('click', async function(e) {
+        const lat = e.latlng.lat.toFixed(6);
+        const lng = e.latlng.lng.toFixed(6);
+
+        document.getElementById('lat').value = lat;
+        document.getElementById('long').value = lng;
+
+        // Obtener dirección con Nominatim
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        const direccion = data.address.suburb || data.address.neighbourhood || data.address.city || 'Dirección no disponible';
+        document.getElementById('colonia').value = direccion;
+
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('reporteModal'));
+        modal.show();
+
+        // Agregar marcador temporal
+        L.marker([lat, lng]).addTo(map).bindPopup(`Nuevo reporte aquí:<br>${direccion}`).openPopup();
+    });
+
+    // Mostrar puntos existentes
+    const puntos = {{ puntos|tojson }};
+    puntos.forEach(p => {
+        const color = p.COLOR === 'GREEN' ? 'green' : 'red';
+        const icono = L.divIcon({ className: 'custom-icon', html: `<i style="color:${color};font-size:24px;" class="fas fa-map-marker-alt"></i>` });
+        const popupContent = `
+            <b>ID:</b> ${p.ID}<br>
+            <b>Colonia:</b> ${p.colonia}<br>
+            <b>Reportes:</b> ${p.REPORTES}<br>
+            <b>Fecha:</b> ${p.fecha}<br>
+            <b>Estado:</b> ${p.location}<br>
+            ${p.foto ? `<img src="/static/uploads/${p.foto}" style="width:100px;height:100px;object-fit:cover;">` : ''}
+        `;
+        L.marker([p.lat, p.long], { icon: icono }).addTo(map).bindPopup(popupContent);
+    });
+
+    // Preview de imagen
+    document.getElementById('fotoInput').addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                               document.getElementById('previewImg').src = e.target.result;
+            }
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
+</script>
+
+{% endblock %} 

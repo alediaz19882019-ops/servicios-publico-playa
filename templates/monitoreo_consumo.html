@@ -1,0 +1,123 @@
+
+{% extends 'base.html' %}
+{% block title %}Monitoreo de Consumo{% endblock %}
+{% block content %}
+<div class="min-h-screen bg-gray-900 px-6 py-12 text-white">
+    <!-- Barra de navegación -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-4xl font-bold">Monitoreo de Consumo</h1>
+        <div class="flex gap-4">
+            <!-- Botón para volver -->
+            <a href="{{ url_for('alumbrado') }}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg">
+               Volver a Dirección de Alumbrado Público
+            </a>
+            <!-- Botón existente -->
+            <button id="btnAgregar" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg">
+                Agregar Datos
+            </button>
+        </div>
+    </div>
+
+    <!-- Formulario oculto -->
+    <div id="formContainer" class="hidden bg-gray-800 rounded-xl p-6 shadow-lg max-w-5xl mx-auto mt-8">
+        <h2 class="text-2xl font-bold mb-4 text-center">Ingresar Datos de Consumo</h2>
+        <form id="datosForm" enctype="multipart/form-data" class="grid grid-cols-2 gap-4">
+            <!-- Campos principales -->
+            <input type="text" name="RPU" placeholder="RPU" class="p-2 rounded text-black" required>
+            <input type="text" name="semaforo_energetico" placeholder="Semáforo Energético" class="p-2 rounded text-black">
+            <input type="text" name="beneficiario" placeholder="Beneficiario" class="p-2 rounded text-black">
+            <input type="text" name="direccion" placeholder="Dirección" class="p-2 rounded text-black">
+            <input type="text" name="area" placeholder="Área" class="p-2 rounded text-black">
+            <input type="text" name="responsable" placeholder="Responsable" class="p-2 rounded text-black">
+            <input type="text" name="clasificacion" placeholder="Clasificación" class="p-2 rounded text-black">
+            <input type="text" name="tarifa" placeholder="Tarifa" class="p-2 rounded text-black">
+            <input type="number" step="0.01" name="lectura_actual" placeholder="Lectura Actual" class="p-2 rounded text-black">
+            <input type="number" step="0.01" name="lectura_anterior" placeholder="Lectura Anterior" class="p-2 rounded text-black">
+            <input type="number" step="0.01" name="consumo_kwh" placeholder="Consumo KWH" class="p-2 rounded text-black">
+            <input type="number" step="0.01" name="importe_recibo" placeholder="Importe Recibo" class="p-2 rounded text-black">
+            <input type="number" step="0.01" name="importe_estado_cuenta" placeholder="Importe Estado de Cuenta" class="p-2 rounded text-black">
+            <input type="number" step="0.01" name="kwh_totales" placeholder="KWH Totales" class="p-2 rounded text-black">
+            <input type="number" step="0.01" name="importe_total_recibos" placeholder="Importe Total Recibos" class="p-2 rounded text-black">
+            <input type="number" step="0.01" name="importe_total_pagado_poliza_sp" placeholder="Importe Total Pagado Póliza +SP" class="p-2 rounded text-black">
+            <textarea name="observaciones" placeholder="Observaciones" class="p-2 rounded text-black col-span-2"></textarea>
+            <input type="number" step="0.01" name="carga_censo_kw" placeholder="Carga Censo KW" class="p-2 rounded text-black">
+            <input type="number" step="0.01" name="corriente_censo_amp" placeholder="Corriente Censo Amp" class="p-2 rounded text-black">
+            <input type="number" step="0.01" name="consumo_ideal" placeholder="Consumo Ideal" class="p-2 rounded text-black">
+            <input type="number" step="0.01" name="consumo_12hrs" placeholder="Consumo 12hrs" class="p-2 rounded text-black">
+            <input type="number" step="0.01" name="consumo_24hrs" placeholder="Consumo 24hrs" class="p-2 rounded text-black">
+            <input type="text" name="status" placeholder="Status" class="p-2 rounded text-black">
+            <label class="col-span-2">Subir PDF:</label>
+            <input type="file" name="pdf" accept=".pdf" class="col-span-2">
+            <label class="col-span-2">Subir XML:</label>
+            <input type="file" name="xlm" accept=".xml" class="col-span-2">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 col-span-2 py-2 rounded-lg font-semibold">Guardar Datos</button>
+        </form>
+    </div>
+
+    <!-- Tabla de registros -->
+    <div class="mt-10 bg-gray-800 rounded-xl p-6 shadow-lg">
+        <h2 class="text-xl font-bold mb-4">Registros de Consumo</h2>
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-700">
+                    <th class="p-2">RPU</th>
+                    <th class="p-2">Beneficiario</th>
+                    <th class="p-2">Dirección</th>
+                    <th class="p-2">Consumo KWH</th>
+                    <th class="p-2">Importe Recibo</th>
+                    <th class="p-2">PDF</th>
+                    <th class="p-2">XML</th>
+                    <th class="p-2">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for registro in registros %}
+                <tr class="border-b border-gray-600">
+                    <td class="p-2">{{ registro.RPU }}</td>
+                    <td class="p-2">{{ registro.beneficiario }}</td>
+                    <td class="p-2">{{ registro.direccion }}</td>
+                    <td class="p-2">{{ registro.consumo_kwh }}</td>
+                    <td class="p-2">{{ registro.importe_recibo }}</td>
+                    <td class="p-2">{% if registro.pdf %}<a href="{{ registro.pdf }}" target="_blank">Descargar</a>{% else %}-{% endif %}</td>
+                    <td class="p-2">{% if registro.xlm %}<a href="{{ registro.xlm }}" target="_blank">Descargar</a>{% else %}-{% endif %}</td>
+                    <td class="p-2">
+                        <button class="bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-white" onclick="eliminarRegistro({{ registro.id }})">Eliminar</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.getElementById('btnAgregar').addEventListener('click', () => {
+    document.getElementById('formContainer').classList.toggle('hidden');
+});
+
+document.getElementById('datosForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    const response = await fetch("{{ url_for('guardar_datos') }}", {
+        method: 'POST',
+        body: formData
+    });
+
+    const result = await response.json();
+    alert(result.message);
+    location.reload();
+});
+
+async function eliminarRegistro(id) {
+    if (confirm('¿Seguro que deseas eliminar este registro?')) {
+        const response = await fetch(`/eliminar-registro/${id}`, { method: 'DELETE' });
+        const result = await response.json();
+        alert(result.message);
+        location.reload();
+    }
+}
+</script>
+{% endblock %}
+

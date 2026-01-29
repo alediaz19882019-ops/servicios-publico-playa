@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Secretaría de Servicios Públicos{% endblock %}</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Configuración Tailwind personalizada -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                dark: '#000000',
+                nav: '#D4005B',
+                light: '#fdf2f8',
+                accent: '#FFFFFF',
+                playa_teal: '#00A3A3',
+                playa_pink: '#F55E9E',
+                playa_purple: '#C490D1',
+                playa_yellow: '#FFC700',
+              }
+            },
+            animation: {
+              heartbeat: 'heartbeat 9.5s infinite cubic-bezier(0.4, 0, 0.6, 1)',
+            },
+            keyframes: {
+              heartbeat: {
+                '0%, 100%': { transform: 'scale(1)' },
+                '50%': { transform: 'scale(1.08)' },
+              },
+            },
+          }
+        }
+      }
+    </script>
+
+    <style>
+      .toast {
+        animation: fadeIn 1s ease;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    </style>
+
+    <!-- =============================== -->
+    <!--     LEAFLET + MARKERCLUSTER     -->
+    <!--  (CORRECTAMENTE IMPLEMENTADOS)  -->
+    <!-- =============================== -->
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <!-- MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css">
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- MarkerCluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
+</head>
+
+<body class="bg-brand-dark text-white min-h-screen flex flex-col font-sans">
+
+    <!-- Navbar -->
+    {% block navbar %}
+    <nav class="bg-brand-nav/80 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
+        <div class="px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+
+                <!-- Logo y título -->
+                <div class="flex items-center">
+                    <a href="{{ url_for('select_location') }}" class="text-brand-accent hover:text-gray-300 transition duration-150 p-2 rounded-full hover:bg-white/10" aria-label="Seleccionar ubicación">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                    </a>
+                    <span class="font-bold text-2xl tracking-tight text-white ml-2">
+                        Secretaría de Servicios Públicos Municipales
+                    </span>
+                </div>
+
+                <!-- Botón derecho -->
+                <div class="flex items-center">
+                    {% block navbar_right %}
+                    {% if show_agregar_datos %}
+                    <a href="{{ url_for('agregar_reporte') }}" 
+                       class="flex items-center gap-2 bg-playa_teal hover:bg-playa_pink text-white font-semibold px-4 py-2 rounded-lg animate-heartbeat transition duration-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Agregar datos
+                    </a>
+                    {% endif %}
+                    {% endblock %}
+                </div>
+
+            </div>
+        </div>
+    </nav>
+    {% endblock %}
+
+    <!-- Contenido principal -->
+    <main class="flex-grow relative px-4 py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Toasts -->
+    <div class="fixed top-4 right-4 space-y-4 z-50">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="toast bg-{{ category }}-100 border-l-4 border-{{ category }}-500 text-{{ category }}-700 p-4 rounded-md shadow-lg w-64">
+                  <p class="font-semibold">{{ message }}</p>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+    </div>
+
+    <script>
+      setTimeout(function() {
+        document.querySelectorAll('.toast').forEach(msg => {
+          msg.style.transition = 'opacity 0.5s ease';
+          msg.style.opacity = '0';
+          setTimeout(() => msg.remove(), 500);
+        });
+      }, 3000);
+    </script>
+
+</body>
+</html>

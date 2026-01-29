@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+    #map {
+        height: 80vh;
+        width: 100%;
+        border: 2px solid #444;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .filters {
+        background: #1a1a1a;
+        padding: 12px;
+        color: white;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+    .filters input {
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid #555;
+        background: #222;
+        color: white;
+    }
+</style>
+
+<div class="filters">
+    <b>Filtrar:</b>
+    <input type="text" id="searchColonia" placeholder="RPU o Colonia..." onkeyup="applyFilters()">
+    <span style="margin-left:15px;color:#7bd7ff">● Sector (Madre)</span>
+    <span style="margin-left:10px;color:#ff0000">● Luminarias (Hijos)</span>
+</div>
+
+<div id="map"></div>
+
+<!-- PANEL DE INFORMACIÓN DEL SECTOR -->
+<div id="panel-info" style="
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    width: 350px;
+    padding: 15px;
+    background: white;
+    color: black;
+    border-radius: 10px;
+    box-shadow: 0 0 10px black;
+    display: none;
+    z-index: 9999;">
+
+    <h3 id="panel-title" style="font-weight:bold; font-size:20px;">Sector</h3>
+    <p id="panel-rpu"></p>
+    <p id="panel-sector"></p>
+    <p id="panel-hijos"></p>
+
+    <h4 style="font-weight:bold; margin-top:10px;">Consumo mensual (kWh)</h4>
+    <canvas id="graficoConsumo" width="300" height="160"></canvas>
+
+    <h4 style="font-weight:bold; margin-top:10px;">Pagos mensuales (MXN)</h4>
+    <canvas id="graficoPagos" width="300" height="160"></canvas>
+
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+let map, markersLayer, hijosLayer, lastRPU = null;
+
+// =============================
+//    DATOS DEL SECTOR
+// =============================
+let datosSector = {
+    "810070305978": {
+        consumo: [320, 340, 310, 360, 400, 390],
+        pagos: [850, 910, 870, 920, 980, 950],
+        estable: 777.6,
+        med: 1166.4,
+        max: 1555.2
+    },
+    "810190100920": {
+        consumo: [220, 210, 250, 240, 260, 255],
+        pagos: [610, 580, 640, 620, 660, 645],
+        estable: 938.52,
+        med: 1407.78,
+        max: 1877.04
+    },
+    "810171203556": {
+        consumo: [150, 170, 160, 180, 175, 190],
+        pagos: [400, 430, 410, 450, 440, 470],
+        estable: 864,
+        med: 1296,
+        max: 1728
+    },
+    "810171203564": {
+        consumo: [110, 130, 120, 140, 150, 135],
+        pagos: [310, 350, 330, 370, 395, 360],
+        estable: 1377,
+        med: 2065.5,
+        max: 2754
+    },
+    "810110117037": {
+        consumo: [90, 100, 95, 105, 110, 100],
+        pagos: [250, 270, 260, 280, 300, 275],
+        estable: 891,
+        med: 1336.5,
+        max: 1782
+    }
+};
+
+// =============================
+//   INICIALIZAR MAPA
+// =============================
+window.onload = function () {
+    map = L.map("map").setView([20.7759, -86.9576], 13);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "© OpenStreetMap contributors"
+    }).addTo(map);
+
+    markersLayer = L.layerGroup().addTo(map);
+    hijosLayer = L.layerGroup().addTo(map);
+
+    relacionesHijos = {
+        "810070305978": [
+            { lat: 20.767486, lng: -86.96438 }, { lat: 20.768184, lng: -86.96383 },
+            { lat: 20.768834, lng: -86.96331 }, { lat: 20.769603, lng: -86.96273 },
+            { lat: 20.770325, lng: -86.96219 }, { lat: 20.777941, lng: -86.95632 },
+            { lat: 20.779053, lng: -86.95549 }, { lat: 20.778548, lng: -86.95586 },
+            { lat: 20.780223, lng: -86.95459 }, { lat: 20.779622, lng: -86.95503 },
+            { lat: 20.781343, lng: -86.95370 }, { lat: 20.780791, lng: -86.95413 },
+            { lat: 20.783106, lng: -86.95237 }, { lat: 20.782569, lng: -86.95277 }
+        ]
+    };
+
+    allData = [
+        { lat: 20.775902, lng: -86.957679, rpu: "810070305978", colonia: "Carretera Fed.", sector: "1" },
+        { lat: 20.761747, lng: -86.968585, rpu: "810190100920", colonia: "Carretera Fed.", sector: "2" },
+        { lat: 20.747893, lng: -86.979245, rpu: "810171203556", colonia: "Carretera Fed.", sector: "3" },
+        { lat: 20.736025, lng: -86.993194, rpu: "810171203564", colonia: "Carretera Fed.", sector: "4" },
+        { lat: 20.649278, lng: -87.067324, rpu: "810110117037", colonia: "Carretera Fed.", sector: "5" }
+    ];
+
+    renderMarkers(allData);
+};
+
+// =============================
+//   PANEL Y GRAFICAS
+// =============================
+let chartConsumo = null;
+let chartPagos = null;
+
+function mostrarPanelMadre(rpu, sector, hijos) {
+
+    document.getElementById("panel-info").style.display = "block";
+    document.getElementById("panel-rpu").innerHTML = "RPU: " + rpu;
+    document.getElementById("panel-sector").innerHTML = "Sector: " + sector;
+    document.getElementById("panel-hijos").innerHTML = "Luminarias: " + hijos;
+
+    let info = datosSector[rpu];
+
+    let ctx1 = document.getElementById("graficoConsumo").getContext("2d");
+    let ctx2 = document.getElementById("graficoPagos").getContext("2d");
+
+    if (chartConsumo) chartConsumo.destroy();
+    if (chartPagos) chartPagos.destroy();
+
+    chartConsumo = new Chart(ctx1, {
+        type: "line",
+        data: {
+            labels: ["Ene","Feb","Mar","Abr","May","Jun"],
+            datasets: [
+                {
+                    label: "Consumo (kWh)",
+                    data: info.consumo,
+                    borderColor: "#009dff",
+                    backgroundColor: "rgba(0,157,255,0.3)",
+                    borderWidth: 2
+                },
+                {
+                    label: "Estable",
+                    data: Array(6).fill(info.estable),
+                    borderColor: "#00ff00",
+                    borderDash: [6,6],
+                    borderWidth: 2,
+                    pointRadius: 0
+                },
+                {
+                    label: "Medio",
+                    data: Array(6).fill(info.med),
+                    borderColor: "#ffff00",
+                    borderDash: [6,6],
+                    borderWidth: 2,
+                    pointRadius: 0
+                },
+                {
+                    label: "Máximo",
+                    data: Array(6).fill(info.max),
+                    borderColor: "#ff0000",
+                    borderDash: [6,6],
+                    borderWidth: 2,
+                    pointRadius: 0
+                }
+            ]
+        }
+    });
+
+    chartPagos = new Chart(ctx2, {
+        type: "bar",
+        data: {
+            labels: ["Ene","Feb","Mar","Abr","May","Jun"],
+            datasets: [{
+                label: "$ MXN",
+                data: info.pagos,
+                backgroundColor: "#ff9900"
+            }]
+        }
+    });
+}
+
+// =============================
+//      TOGGLE HIJOS
+// =============================
+function toggleHijos(rpuMadre, sectorMadre) {
+
+    let totalHijos = relacionesHijos[rpuMadre]?.length || 0;
+    mostrarPanelMadre(rpuMadre, sectorMadre, totalHijos);
+
+    if (lastRPU === rpuMadre) {
+        hijosLayer.clearLayers();
+        lastRPU = null;
+        return;
+    }
+
+    hijosLayer.clearLayers();
+    if (relacionesHijos[rpuMadre]) {
+        relacionesHijos[rpuMadre].forEach(hijo => {
+            L.circleMarker([hijo.lat, hijo.lng], {
+                radius: 7,
+                fillColor: "#ff0000",
+                color: "#8b0000",
+                weight: 1,
+                fillOpacity: 0.9
+            }).addTo(hijosLayer);
+        });
+
+        let group = new L.featureGroup(hijosLayer.getLayers());
+        map.fitBounds(group.getBounds().pad(0.3));
+    }
+
+    lastRPU = rpuMadre;
+}
+
+// =============================
+//      FILTRO
+// =============================
+function applyFilters() {
+    const search = document.getElementById("searchColonia").value.toLowerCase();
+    const filtered = allData.filter(i =>
+        i.colonia.toLowerCase().includes(search) || i.rpu.includes(search)
+    );
+    renderMarkers(filtered);
+    hijosLayer.clearLayers();
+}
+
+// =============================
+//      MARCADORES MADRES
+// =============================
+function renderMarkers(data) {
+
+    markersLayer.clearLayers();
+    hijosLayer.clearLayers();
+
+    data.forEach(item => {
+
+        let icon = L.divIcon({
+            className: "sector-icon",
+            html: `
+                <div style="
+                    background:#009dff;
+                    color:white;
+                    width:28px;
+                    height:28px;
+                    display:flex;
+                    justify-content:center;
+                    align-items:center;
+                    border-radius:50%;
+                    font-weight:bold;
+                    border:2px solid #003f73;
+                ">${item.sector}</div>
+            `,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+
+        let marker = L.marker([item.lat, item.lng], { icon });
+
+        marker.on("click", () => toggleHijos(item.rpu, item.sector));
+
+        marker.addTo(markersLayer);
+    });
+}
+
+</script>
+
+{% endblock %}

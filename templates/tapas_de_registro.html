@@ -1,0 +1,72 @@
+
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-primary text-white text-center">
+            <h5 class="mb-0"></h5>
+        </div>
+        <div class="card-body p-0">
+            <div id="map" style="height: 550px; width: 100%;"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color: #f8f9fa; }
+    .card { border-radius: 8px; }
+</style>
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const map = L.map('map').setView([20.62, -87.07], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let marker;
+
+    map.on('click', async function(e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+
+        // Si ya hay un marcador, eliminarlo
+        if (marker) {
+            map.removeLayer(marker);
+        }
+
+        // Agregar nuevo marcador
+        marker = L.marker([lat, lng]).addTo(map);
+
+        // Obtener dirección con Nominatim
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+        let direccion = "Dirección no disponible";
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            direccion = data.display_name || direccion;
+        } catch (error) {
+            console.error("Error obteniendo dirección:", error);
+        }
+
+        // Redirigir a la página de agregar reporte con datos en la URL
+        const params = new URLSearchParams({
+            direccion: direccion,
+            lat: lat.toFixed(5),
+            long: lng.toFixed(5)
+        });
+        window.location.href = `/agregar-reporte?${params.toString()}`;
+    });
+});
+</script>
+
+
+
+
+
+
+{% endblock %}

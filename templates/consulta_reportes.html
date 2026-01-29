@@ -1,0 +1,101 @@
+
+{% extends 'base.html' %}
+
+{% block navbar_right %}
+<a href="{{ url_for('agregar_reporte') }}" 
+   class="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-4 py-2 rounded-lg shadow-md transition duration-300">
+    Agregar Reporte
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto mt-10 bg-white shadow-lg rounded-lg p-6">
+    <h2 class="text-3xl font-bold mb-6 text-center text-indigo-700">Consulta de Reportes</h2>
+
+    <!-- Filtros -->
+    <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <input type="text" name="colonia" placeholder="Filtrar por colonia" value="{{ request.args.get('colonia', '') }}" 
+               class="border border-teal-500 rounded px-3 py-2 focus:ring-2 focus:ring-teal-500">
+        <input type="date" name="fecha" value="{{ request.args.get('fecha', '') }}" 
+               class="border border-teal-500 rounded px-3 py-2 focus:ring-2 focus:ring-teal-500">
+        <input type="text" name="color" placeholder="Filtrar por color" value="{{ request.args.get('color', '') }}" 
+               class="border border-teal-500 rounded px-3 py-2 focus:ring-2 focus:ring-teal-500">
+        <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 py-2 rounded-lg shadow-md transition duration-300">
+            Aplicar Filtros
+        </button>
+    </form>
+
+    <!-- Tabla -->
+    <div class="overflow-x-auto">
+        <table class="min-w-full border border-gray-300 rounded-lg">
+            <thead>
+                <tr class="bg-indigo-600 text-white">
+                    <th class="px-4 py-2">ID</th>
+                    <th class="px-4 py-2">Colonia</th>
+                    <th class="px-4 py-2">Reporte</th>
+                    <th class="px-4 py-2">Fecha</th>
+                    <th class="px-4 py-2">Color</th>
+                    <th class="px-4 py-2">Foto</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reporte in reportes %}
+                <tr class="border-b hover:bg-gray-100 {% if loop.index is even %}bg-gray-50{% endif %}">
+                    <td class="px-4 py-2 text-gray-700">{{ reporte.ID }}</td>
+                    <td class="px-4 py-2 text-gray-700">{{ reporte.colonia }}</td>
+                    <td class="px-4 py-2 text-gray-700">{{ reporte.REPORTES }}</td>
+                    <td class="px-4 py-2 text-gray-700">{{ reporte.fecha }}</td>
+                    <td class="px-4 py-2 text-gray-700">{{ reporte.COLOR }}</td>
+                    <td class="px-4 py-2 text-gray-700">
+                        {% if reporte.foto %}
+                            <img src="{{ url_for('static', filename='uploads/' ~ reporte.foto) }}" class="w-16 h-16 object-cover rounded">
+                        {% else %}
+                            <span class="text-gray-500">Sin foto</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-gray-500 py-4">No hay reportes disponibles.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Gráfica -->
+    <div class="mt-8">
+        <h3 class="text-xl font-semibold mb-4 text-center">Distribución de Reportes</h3>
+        <canvas id="reportesChart" style="max-height: 400px;"></canvas>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const pendientes = {{ pendientes }};
+    const atendidos = {{ atendidos }};
+
+    new Chart(document.getElementById('reportesChart'), {
+        type: 'pie',
+        data: {
+            labels: ['Pendientes', 'Atendidos'],
+            datasets: [{
+                data: [pendientes, atendidos],
+                backgroundColor: ['rgba(255,0,0,0.7)', 'rgba(0,128,0,0.7)']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins:            plugins: {
+                title: { display: true, text: 'Distribución de Reportes' }
+            }
+        }
+    });
+});
+</script>
+
+
+
+{% endblock %}

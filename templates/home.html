@@ -1,0 +1,36 @@
+Bse <!-- templates/home.html -->
+
+{% extends 'base.html' %}
+
+{% block navbar %}{% endblock %}
+
+{% block content %}
+<!-- Contenedor principal centrado vertical y horizontalmente -->
+<div class="flex flex-col items-center justify-center min-h-[100vh] text-center px-4">
+    
+    <div> 
+        <!-- La imagen está centrada dentro de este div -->
+        <div class="mb-4 flex justify-center">
+             
+             <a href="{{ url_for('login') }}" 
+                class="block cursor-pointer">
+                 
+                 <img src="{{ url_for('static', filename='uploads/alejo.jpeg') }}" 
+     alt="Logotipo de Alejo" 
+     class="h-70 w-auto animate-heartbeat">
+                      
+             </a>
+        </div>
+        
+       
+  
+        
+         
+        
+      </div>
+    </div>
+</div>
+
+<!-- ... (El bloque style para la animación soft-pulse sigue aquí) ... -->
+
+{% endblock %}

@@ -1,0 +1,57 @@
+<!-- templates/ingreso_consumo.html -->
+{% extends 'base.html' %}
+
+{% block title %}Ingresar Datos de Consumo{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-screen px-4 pb-12 bg-brand-dark">
+    <div class="bg-brand-nav/80 backdrop-blur-sm p-10 rounded-xl shadow-2xl w-full max-w-lg border border-brand-playa_teal/30">
+        <h1 class="text-3xl font-extralight text-white mb-6 text-center">Registro de Consumo Energético</h1>
+        
+        <!-- Muestra mensajes flash de Flask (éxito/error) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="p-3 mb-4 text-sm rounded-lg {% if category == 'green' %}bg-green-100 text-green-800{% elif category == 'red' %}bg-red-100 text-red-800{% endif %}">
+                  {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- Formulario: Asegúrate de que apunte al endpoint correcto en routes.py -->
+        <form method="POST" action="{{ url_for('ingreso_consumo') }}" class="space-y-4">
+            
+            <div>
+                <label for="fecha" class="block mb-2 text-sm font-medium text-gray-300">Fecha del Registro</label>
+                <input type="date" id="fecha" name="fecha" required 
+                       class="bg-brand-dark border border-brand-playa_teal text-white text-sm rounded-lg focus:ring-brand-playa_yellow focus:border-brand-playa_yellow block w-full p-3">
+            </div>
+
+            <div>
+                <label for="consumo" class="block mb-2 text-sm font-medium text-gray-300">Consumo (kWh)</label>
+                <input type="number" id="consumo" name="consumo" step="0.01" required 
+                       class="bg-brand-dark border border-brand-playa_teal text-white text-sm rounded-lg focus:ring-brand-playa_yellow focus:border-brand-playa_yellow block w-full p-3"
+                       placeholder="Ej: 540.25">
+            </div>
+
+             <div>
+                <label for="importe" class="block mb-2 text-sm font-medium text-gray-300">Importe ($ MXN)</label>
+                <input type="number" id="importe" name="importe" step="0.01" required 
+                       class="bg-brand-dark border border-brand-playa_teal text-white text-sm rounded-lg focus:ring-brand-playa_yellow focus:border-brand-playa_yellow block w-full p-3"
+                       placeholder="Ej: 15200.00">
+            </div>
+            
+            <button type="submit" 
+                    class="w-full bg-brand-playa_pink hover:bg-pink-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg 
+                    transition duration-300 ease-in-out transform hover:scale-105">
+                Guardar Datos
+            </button>
+        </form>
+        
+        <p class="text-center mt-6 text-sm text-gray-400">
+            <a href="{{ url_for('monitoreo_consumo') }}" class="text-brand-playa_teal hover:underline font-semibold">Volver al Dashboard</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

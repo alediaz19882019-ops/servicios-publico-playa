@@ -183,3 +183,4 @@ def configure_routes(app):
 
         except Exception as e:
             return jsonify({'status': 'error', 'message': f'Error procesando datos: {e}'})
+
